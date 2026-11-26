@@ -1,0 +1,24 @@
+# Переменные окружения и секреты
+.env
+.env.local
+*.key
+*.pem
+
+# Журналы и временные файлы
+*.log
+logs/
+tmp/
+*.tmp
+
+# ОС и редакторы
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Зависимости и кэш
+node_modules/
+__pycache__/
+.venv/
+venv/

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecurNet — Инновационная система кибербезопасности (SOC)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <h1>SecurNet <span class="badge-version">v1.2.0</span></h1>
+        <p class="subtitle">Инновационная платформа кибербезопасности (SIEM / SOAR / UEBA)</p>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="status-pill" id="systemStatus">
+        <span class="pulse-dot"></span>
+        <span>Мониторинг 24/7: Активен</span>
+      </div>
+      <button class="btn btn-danger" id="btnSimulateAttack" type="button">Симуляция атаки</button>
+      <button class="btn btn-secondary" id="btnExportReport" type="button">Экспорт JSON</button>
+    </div>
+  </header>
+
+  <nav class="nav-tabs" aria-label="Разделы консоли">
+    <button class="tab-btn active" data-tab="dashboard" type="button">Центр мониторинга (SOC)</button>
+    <button class="tab-btn" data-tab="vulnerabilities" type="button">Сканер уязвимостей (CVE)</button>
+    <button class="tab-btn" data-tab="architecture" type="button">Архитектура и модули</button>
+  </nav>
+
+  <main class="container">
+    <!-- TAB 1: DASHBOARD -->
+    <section id="tab-dashboard" class="tab-content active">
+      <!-- KPI CARDS -->
+      <div class="kpi-grid">
+        <article class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Поток событий (EPS)</span>
+            <span class="kpi-tag tag-ok">Норма &ge; 15 000</span>
+          </div>
+          <div class="kpi-value" id="kpiEps">18 420</div>
+          <div class="kpi-foot">Средняя задержка корреляции: <strong id="kpiLatency">1.32 с</strong></div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Активные инциденты</span>
+            <span class="kpi-tag tag-warn" id="kpiCritBadge">2 критических</span>
+          </div>
+          <div class="kpi-value" id="kpiActiveIncidents">5</div>
+          <div class="kpi-foot">Требуют реакции SOC / SOAR</div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Заблокированные IP</span>
+            <span class="kpi-tag tag-info">SOAR Firewall</span>
+          </div>
+          <div class="kpi-value" id="kpiBlockedIps">14</div>
+          <div class="kpi-foot">Поддерживается авто-откат правил</div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Точность ML / UEBA</span>
+            <span class="kpi-tag tag-ok">FP &lt; 5 %</span>
+          </div>
+          <div class="kpi-value" id="kpiAccuracy">96.2 %</div>
+          <div class="kpi-foot">Ложные срабатывания: <strong>3.8 %</strong></div>
+        </article>
+      </div>
+
+      <!-- CHART + LIVE LOG -->
+      <div class="split-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Телеметрия сетевого трафика и аномалий</h2>
+              <p class="panel-sub">Поток событий Apache Kafka (синий) и выявленные аномалии UEBA (красный)</p>
+            </div>
+            <div class="legend">
+              <span><i class="dot dot-blue"></i>События (EPS)</span>
+              <span><i class="dot dot-red"></i>Аномалии</span>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="telemetryChart" width="760" height="240"></canvas>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Журнал аудита и SOAR</h2>
+              <p class="panel-sub">Оперативные действия системы и операторов</p>
+            </div>
+            <button class="btn-link" id="btnClearLog" type="button">Очистить</button>
+          </div>
+          <ul class="audit-log" id="auditLog"></ul>
+        </section>
+      </div>
+
+      <!-- INCIDENTS TABLE -->
+      <section class="panel">
+        <div class="panel-header wrap">
+          <div>
+            <h2>Карточки инцидентов информационной безопасности</h2>
+            <p class="panel-sub">Управление инцидентами и запуск сценариев реагирования SOAR</p>
+          </div>
+          <div class="filters">
+            <input type="search" id="searchInput" class="input" placeholder="Поиск по IP, хосту или типу..." />
+            <select id="severityFilter" class="select" aria-label="Фильтр критичности">
+              <option value="all">Вся критичность</option>
+              <option value="critical">Критический</option>
+              <option value="high">Высокий</option>
+              <option value="medium">Средний</option>
+              <option value="low">Низкий</option>
+            </select>
+            <select id="statusFilter" class="select" aria-label="Фильтр статуса">
+              <option value="all">Все статусы</option>
+              <option value="open">Открыт</option>
+              <option value="mitigated">Заблокирован (SOAR)</option>
+              <option value="closed">Закрыт</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Время</th>
+                <th>Тип угрозы / Правило</th>
+                <th>Источник (IP)</th>
+                <th>Целевой узел</th>
+                <th>Критичность</th>
+                <th>Статус</th>
+                <th>Действия SOAR</th>
+              </tr>
+            </thead>
+            <tbody id="incidentsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- TAB 2: VULNERABILITIES -->
+    <section id="tab-vulnerabilities" class="tab-content">
+      <section class="panel">
+        <div class="panel-header wrap">
+          <div>
+            <h2>Сканер уязвимостей и контроль зависимостей (SCA / CVE)</h2>
+            <p class="panel-sub">Выявленные уязвимости на узлах сети и в программных компонентах</p>
+          </div>
+          <button class="btn btn-primary" id="btnRescanCve" type="button">Запустить повторное сканирование</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>CVE ID</th>
+                <th>Компонент / Узел</th>
+                <th>CVSS v3</th>
+                <th>Описание проблемы</th>
+                <th>Статус</th>
+                <th>Устранение</th>
+              </tr>
+            </thead>
+            <tbody id="cveBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- TAB 3: ARCHITECTURE -->
+    <section id="tab-architecture" class="tab-content">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Микросервисная архитектура ИС «SecurNet»</h2>
+            <p class="panel-sub">Текущий статус подсистем, контура сопровождения CI/CD и резервного копирования</p>
+          </div>
+        </div>
+
+        <div class="arch-grid">
+          <div class="arch-card">
+            <div class="arch-badge">Слой сбора</div>
+            <h3>Сенсоры трафика и EDR-агенты</h3>
+            <p>Сбор NetFlow, DPI, Syslog и Windows Event Log с 50+ корпоративных узлов. Шифрование канала по TLS 1.3.</p>
+            <div class="arch-meta">Состояние: <span class="text-ok">Работает (54/54 узла)</span></div>
+          </div>
+
+          <div class="arch-card">
+            <div class="arch-badge">Шина данных</div>
+            <h3>Apache Kafka + Logstash</h3>
+            <p>Буферизация и нормализация событий в реальном времени с гарантией доставки при пиках до 20 000 EPS.</p>
+            <div class="arch-meta">Состояние: <span class="text-ok">Потери 0 %</span></div>
+          </div>
+
+          <div class="arch-card">
+            <div class="arch-badge">Аналитика</div>
+            <h3>Модуль корреляции и ML (UEBA)</h3>
+            <p>Сигнатурный и поведенческий анализ аномалий с канареечным обновлением правил и порогом FP &le; 5 %.</p>
+            <div class="arch-meta">Версия правил: <span class="text-info">ruleset-v1.2.4</span></div>
+          </div>
+
+          <div class="arch-card">
+            <div class="arch-badge">Хранение</div>
+            <h3>ClickHouse + PostgreSQL</h3>
+            <p>Колоночное хранение потока телеметрии и реляционная БД инцидентов и ролевой модели RBAC с DR-бэкапами.</p>
+            <div class="arch-meta">Последний DR-тест: <span class="text-ok">Успешно (4 мин 10 с)</span></div>
+          </div>
+
+          <div class="arch-card">
+            <div class="arch-badge">Реагирование</div>
+            <h3>Модуль автоматизации SOAR</h3>
+            <p>Выполнение плейбуков блокировки IP на межсетевом экране, изоляции хостов и оповещения SOC в Telegram/Email.</p>
+            <div class="arch-meta">Авто-откат: <span class="text-ok">Включен</span></div>
+          </div>
+
+          <div class="arch-card">
+            <div class="arch-badge">Сопровождение</div>
+            <h3>DevSecOps и Docs-as-Code</h3>
+            <p>Контроль версий в Git/GitHub, автоматические проверки линтерами, Pytest/Go test и SCA-сканирование Trivy.</p>
+            <div class="arch-meta">Покрытие тестами: <span class="text-ok">82 %</span></div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- MODAL FOR INCIDENT DETAILS -->
+  <div class="modal-backdrop" id="incidentModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h3 id="modalTitle">Карточка инцидента</h3>
+        <button class="modal-close" id="btnCloseModal" type="button" aria-label="Закрыть">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>ИС «SecurNet» &bull; Учебная практика ПМ.06 «Сопровождение информационных систем» &bull; СПб ГБПОУ «Колледж метростроя» &bull; 2026</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
